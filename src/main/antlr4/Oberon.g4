@@ -51,7 +51,7 @@ expression
  ;
 
 statement
- : var = Id ':=' exp = expression                                                                                             #AssignmentStmt
+ : des = designator ':=' exp = expression                                                                                             #AssignmentStmt
  | stmt += statement (';' stmt += statement)+                                                                                 #SequenceStmt
  | 'readInt'  '(' var = Id ')'                                                                                                #ReadIntStmt
  | 'write' '(' expression ')'                                                                                                 #WriteStmt
@@ -65,6 +65,11 @@ statement
  | 'RETURN' exp = expression                                                                                                  #ReturnStmt
  | 'CASE' exp = expression 'OF' cases += caseAlternative ('|' cases += caseAlternative)* ('ELSE' elseStmt= statement)? 'END'  #CaseStmt
  ;
+
+ designator
+  : var = Id                                                          #varAssignment
+  | array = expression '[' elem = expression ']'                      #arrayAssignment
+  ;
 
 caseAlternative
  : cond = expression ':' stmt = statement                       #SimpleCase
