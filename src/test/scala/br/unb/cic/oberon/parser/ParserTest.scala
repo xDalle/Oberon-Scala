@@ -1744,4 +1744,31 @@ class ParserTestSuite extends AnyFunSuite {
 	assert(stmts(1) == AssignmentStmt(VarAssignment("sum"), AddExpression(IntValue(9),IntValue(2))))
 	assert(stmts(2) == AssignmentStmt(ArrayAssignment(VarExpression("v"), IntValue(2)), VarExpression("sum")))
   }
+
+  test("Testing the oberon ArrayAssignmentStmt05 code. This module has an assignmet array with sum in the index") {
+    val path = Paths.get(getClass.getClassLoader.getResource("stmts/ArrayAssignmentStmt05.oberon").getFile)
+
+    assert(path != null)
+
+    val content = String.join("\n", Files.readAllLines(path))
+    val module = ScalaParser.parse(content)
+
+    assert(module.name == "SimpleModule")
+
+    assert(module.stmt.isDefined)
+
+    // assert that the main block contains a sequence of statements
+    module.stmt.get match {
+      case SequenceStmt(stmts) => assert(stmts.length == 3)
+      case _ => fail("we are expecting four stmts in the main block")
+    }
+
+    // now we can assume that the main block contains a sequence of stmts
+    val sequence = module.stmt.get.asInstanceOf[SequenceStmt]
+    val stmts = sequence.stmts
+
+    assert(stmts.head == AssignmentStmt(VarAssignment("n"), IntValue(5)))
+    assert(stmts(1) == AssignmentStmt(VarAssignment("value"), IntValue(12)))
+    assert(stmts(2) == AssignmentStmt(ArrayAssignment(VarExpression("array"), AddExpression(VarExpression("n"),IntValue(1))), VarExpression("value")))
+  }
 }
