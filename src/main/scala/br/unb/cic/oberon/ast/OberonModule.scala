@@ -90,12 +90,10 @@ trait CaseAlternative {
 case class SimpleCase(condition: Expression, stmt: Statement) extends CaseAlternative
 case class RangeCase(min: Expression, max: Expression, stmt: Statement) extends CaseAlternative
 
-trait AssignmentAlternative {
-  def accept(v: OberonVisitor) = v.visit(this)
-}
+trait AssignmentAlternative
 
-case class varAssignment(varName: String) extends AssignmentAlternative
-case class arrayAssignment(array: Expression, elem: Expression) extends AssignmentAlternative
+case class VarAssignment(varName: String) extends AssignmentAlternative
+case class ArrayAssignment(array: Expression, elem: Expression) extends AssignmentAlternative
 
 /* Types */
 trait Type {

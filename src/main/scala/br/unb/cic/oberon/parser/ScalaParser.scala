@@ -195,10 +195,8 @@ class ParserVisitor {
 	  
 	  val AssignmentVisitor = new AssignmentAlternativeVisitor()
 	  
-	  val designator = new AssignmentAlternative
-	  
 	  ctx.designator.accept(AssignmentVisitor)
-	  designator = AssignmentVisitor.assignmentAlt
+	  val designator = AssignmentVisitor.assignmentAlt
 	  
       stmt = AssignmentStmt(designator, visitor.exp)
     }
@@ -364,13 +362,13 @@ class ParserVisitor {
       // Instantiating the values for the basic ForStmt
       
       // var := rangeMin
-      val init = AssignmentStmt(variable.name, rangeMin)
+      val init = AssignmentStmt(VarAssignment(variable.name), rangeMin)
 
       // var <= rangeMax
       val condition = LTEExpression(variable, rangeMax)
       
       // var := var + 1
-      val accumulator = AssignmentStmt(variable.name, AddExpression(variable, IntValue(1)))
+      val accumulator = AssignmentStmt(VarAssignment(variable.name), AddExpression(variable, IntValue(1)))
 
       // stmt; var := var + 1
       val realBlock = SequenceStmt(List(block, accumulator))
@@ -421,12 +419,12 @@ class ParserVisitor {
   class AssignmentAlternativeVisitor extends OberonBaseVisitor[Unit] {
     var assignmentAlt: AssignmentAlternative = _
 
-    override def visitvarAssignment(ctx: OberonParser.varAssignmentContext): Unit = {
-      val varName = ctx.`des`.getText
-      assignmentAlt = varAssignment(varName)
+    override def visitVarAssignment(ctx: OberonParser.VarAssignmentContext): Unit = {
+      val varName = ctx.`var`.getText
+      assignmentAlt = VarAssignment(varName)
     }
 
-    override def visitarrayAssignment(ctx: OberonParser.arrayAssignment): Unit = {
+    override def visitArrayAssignment(ctx: OberonParser.ArrayAssignmentContext): Unit = {
       var expressionVisitor = new ExpressionVisitor()
       ctx.array.accept(expressionVisitor)
       var array = expressionVisitor.exp
@@ -434,7 +432,7 @@ class ParserVisitor {
       ctx.elem.accept(expressionVisitor)
       var elem = expressionVisitor.exp
 
-      assignmentAlt = arrayAssignment(array, elem)
+      assignmentAlt = ArrayAssignment(array, elem)
     }
   }
   
