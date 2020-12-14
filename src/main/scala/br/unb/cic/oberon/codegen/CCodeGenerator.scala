@@ -112,16 +112,12 @@ case class PaigesBasedGenerator(lineSpaces: Int = 2) extends CCodeGenerator {
       padSpaces: Int = 2
   ): Doc = {
     statement match {
-	
-	/*
       case AssignmentStmt(varName, expression) =>
         formatLine(startSpaces) + Doc.text(varName) + Doc.space + Doc.char(
           '='
         ) + Doc.space + generateExpression(expression) + Doc.char(
           ';'
         ) + Doc.line
-	*/
-		
       case SequenceStmt(stmts) => {
         val multipleStmts = stmts.map {
           case (stmt) => generateStatement(stmt, startSpaces, padSpaces)
@@ -193,8 +189,6 @@ case class PaigesBasedGenerator(lineSpaces: Int = 2) extends CCodeGenerator {
           formatLine(startSpaces) + Doc.text("} while (!(") +
           generateExpression(condition) + Doc.text("));") + Doc.line
       }
-	  
-	  /*
       case ForStmt(init: Statement, condition, stmt) => {
         init match {
           case AssignmentStmt(varName, expression) => {
@@ -218,8 +212,7 @@ case class PaigesBasedGenerator(lineSpaces: Int = 2) extends CCodeGenerator {
           case _ => Doc.empty
         }
       }
-	  */
-	  
+
       case ReturnStmt(exp) =>
         formatLine(startSpaces) + Doc.text("return ") + generateExpression(
           exp
@@ -271,6 +264,45 @@ case class PaigesBasedGenerator(lineSpaces: Int = 2) extends CCodeGenerator {
         ) + Doc.line
       }
 
+      case IfElseIfStmt(condition, thenStmt, elsifStmt, elseStmt) => {
+        val ifCond =
+          formatLine(startSpaces) + Doc.text("if (") + generateExpression(
+            condition
+          ) + Doc.text(
+            ")"
+          ) + Doc.text(" {") + Doc.line + generateStatement(
+            thenStmt,
+            startSpaces + padSpaces,
+            padSpaces
+          ) + formatLine(startSpaces) + Doc.char('}') + Doc.line
+
+        val elsifCond = elsifStmt.map {
+          case ElseIfStmt(elsifCondition, elsifThenStmt) =>
+            formatLine(startSpaces) + Doc.text("else if (") + generateExpression(
+              elsifCondition
+            ) + Doc.text(
+              ")"
+            ) + Doc.text(" {") + Doc.line + generateStatement(
+              elsifThenStmt,
+              startSpaces + padSpaces,
+              padSpaces
+            ) + formatLine(startSpaces) + Doc.char('}')
+        }
+
+        val elseCond = elseStmt match {
+          case Some(stmt) => {
+              Doc.line + formatLine(startSpaces) + Doc.text("else") +
+              Doc.text(" {") + Doc.line + generateStatement(
+              stmt,
+              startSpaces + padSpaces,
+              padSpaces
+            ) + formatLine(startSpaces) +  Doc.char('}') + Doc.line
+          }
+          case None => Doc.line + Doc.empty
+        }
+        val stmts = Doc.intercalate(Doc.line, elsifCond)
+        ifCond + stmts + elseCond
+      }
       case _ => Doc.empty
     }
   }

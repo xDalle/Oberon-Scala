@@ -1,6 +1,6 @@
 package br.unb.cic.oberon.tc
 
-import br.unb.cic.oberon.ast.{AddExpression, AndExpression, AssignmentStmt, BoolValue, BooleanType, Brackets, Constant, DivExpression, EQExpression, Expression, FormalArg, ForStmt, GTEExpression, GTExpression, IfElseStmt, IntValue, IntegerType, LTEExpression, LTExpression, MultExpression, NEQExpression, OberonModule, OrExpression, Procedure, ProcedureCallStmt, ReadIntStmt, ReturnStmt, SequenceStmt, Statement, SubExpression, Type, Undef, UndefinedType, VarExpression, VariableDeclaration, WhileStmt, WriteStmt, RangeCase, SimpleCase, CaseStmt, RepeatUntilStmt, IfElseIfStmt, ElseIfStmt}
+import br.unb.cic.oberon.ast.{AddExpression, AndExpression, ArrayType, AssignmentStmt, BoolValue, BooleanType, Brackets, CaseStmt, Constant, DivExpression, EQExpression, ElseIfStmt, Expression, FieldAccessExpression, ForStmt, FormalArg, GTEExpression, GTExpression, IfElseIfStmt, IfElseStmt, IntValue, IntegerType, LTEExpression, LTExpression, MultExpression, NEQExpression, OberonModule, OrExpression, Procedure, ProcedureCallStmt, RangeCase, ReadIntStmt, RecordType, ReferenceToUserDefinedType, RepeatUntilStmt, ReturnStmt, SequenceStmt, SimpleCase, Statement, SubExpression, Type, Undef, UndefinedType, VarExpression, VariableDeclaration, WhileStmt, WriteStmt}
 import br.unb.cic.oberon.environment.Environment
 import br.unb.cic.oberon.visitor.{OberonVisitor, OberonVisitorAdapter}
 
@@ -30,6 +30,23 @@ class ExpressionTypeVisitor(val typeChecker: TypeChecker) extends OberonVisitorA
     case AndExpression(left, right) => computeBinExpressionType(left, right, BooleanType, BooleanType)
     case OrExpression(left, right) => computeBinExpressionType(left, right, BooleanType, BooleanType)
     // TODO: function call ...
+
+    case FieldAccessExpression(exp, attributeName) => {
+      val expType = visit(exp)
+      if (expType.isEmpty) None
+      expType.get match {
+        case ReferenceToUserDefinedType(userTypeName) => {
+          val baseType = typeChecker.env.lookupUserDefinedType(userTypeName)
+          if (baseType.isEmpty) None
+          if (baseType.get.isInstanceOf[RecordType]) {
+            val recordType = baseType.get.asInstanceOf[RecordType]
+            val attribute = recordType.variables.find(v => v.name.equals(attributeName))
+            if(attribute.isDefined) Some(attribute.get.variableType) else None
+          } else None
+        }
+        case _ => None
+      }
+    }
   }
 
   def computeBinExpressionType(left: Expression, right: Expression, expected: Type, result: Type) : Option[Type] = {
@@ -49,6 +66,7 @@ class TypeChecker extends OberonVisitorAdapter {
     module.constants.map(c => env.setGlobalVariable(c.name, c.exp.accept(expVisitor).get))
     module.variables.map(v => env.setGlobalVariable(v.name, v.variableType))
     module.procedures.map(p => env.declareProcedure(p))
+    module.userTypes.map(u => env.addUserDefinedType(u)) //added G04
 
     // TODO: check if the procedures are well typed.
 
@@ -57,7 +75,7 @@ class TypeChecker extends OberonVisitorAdapter {
   }
 
   override def visit(stmt: Statement) = stmt match {
-    //case AssignmentStmt(_, _) => visitAssignment(stmt)
+    case AssignmentStmt(_, _) => visitAssignment(stmt)
     case IfElseStmt(_, _, _) => visitIfElseStmt(stmt)
     case IfElseIfStmt(_, _, _, _) => visitIfElseIfStmt(stmt)
     case WhileStmt(_, _) => visitWhileStmt(stmt)
@@ -70,9 +88,8 @@ class TypeChecker extends OberonVisitorAdapter {
     case ReadIntStmt(v) => if(env.lookup(v).isDefined) List() else List((stmt, s"Variable $v not declared."))
     case WriteStmt(exp) => if(exp.accept(expVisitor).isDefined) List() else List((stmt, s"Expression $exp is ill typed."))
   }
-/*
+
   private def visitAssignment(stmt: Statement) = stmt match {
-  
     case AssignmentStmt(v, exp) =>
       if (env.lookup(v).isDefined) {
         if (exp.accept(expVisitor).isDefined)
@@ -81,7 +98,7 @@ class TypeChecker extends OberonVisitorAdapter {
       }
       else List((stmt, s"Variable $v not declared"))
   }
-*/
+
   private def visitIfElseStmt(stmt: Statement) = stmt match {
     case IfElseStmt(condition, thenStmt, elseStmt) =>
       if(condition.accept(expVisitor).contains(BooleanType)) {
